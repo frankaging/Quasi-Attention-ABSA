@@ -55,6 +55,8 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
+    model.bert
+
     layer_module_index = 0
     for module_layer in model.bert.encoder.layer:
         layer_name_self = 'model.bert.encoder.layer.' + str(layer_module_index) + \
@@ -413,8 +415,8 @@ class ContextBERTEncoder(nn.Module):
         self.context_layer = \
             nn.ModuleList([copy.deepcopy(deep_context_transform_layer) for _ in range(config.num_hidden_layers)])  
 
-        layer = ContextBERTLayer(config)
-        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(config.num_hidden_layers)])    
+        context_layer = ContextBERTLayer(config)
+        self.layer = nn.ModuleList([copy.deepcopy(context_layer) for _ in range(config.num_hidden_layers)])    
 
     def forward(self, hidden_states, attention_mask,
                 # optional parameters for saving context information

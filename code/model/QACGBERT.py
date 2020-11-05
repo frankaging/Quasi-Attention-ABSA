@@ -46,6 +46,11 @@ def init_hooks_lrp(model):
     """
     # in order to backout all the lrp through layers
     # you need to register hooks here.
+    model.classifier.register_forward_hook(
+        get_inputivation('model.classifier'))
+    model.classifier.register_forward_hook(
+        get_activation('model.classifier'))
+
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
@@ -545,3 +550,13 @@ class QACGBertForSequenceClassification(nn.Module):
             return loss, logits
         else:
             return logits
+
+    def backward_gradient(self, sensitivity_grads):
+        classifier_out = func_activations['model.classifier']
+        embedding_output = func_activations['model.bert.embeddings']
+        sensitivity_grads = torch.autograd.grad(classifier_out, embedding_output, 
+                                                grad_outputs=sensitivity_grads)[0]
+        return sensitivity_grads
+
+    def backward_lat(self):
+        pass

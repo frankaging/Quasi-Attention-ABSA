@@ -13,6 +13,42 @@ from torch.nn import CrossEntropyLoss
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+import collections
+from functools import partial
+
+from util.lrp import *
+
+# access global vars here
+global func_inputs
+global func_activations
+func_inputs = collections.defaultdict(list)
+func_activations = collections.defaultdict(list)
+
+def get_inputivation(name):
+    def hook(model, input, output):
+        func_inputs[name] = [_in for _in in input]
+    return hook
+
+def get_activation(name):
+    def hook(model, input, output):
+        func_activations[name] = output
+    return hook
+
+def get_activation_multi(name):
+    def hook(model, input, output):
+        func_activations[name] = [_out for _out in output]
+    return hook
+
+# TODO: make this init as a part of the model init
+def init_hooks_lrp(model):
+    """
+    Initialize all the hooks required for full lrp for BERT model.
+    """
+    # in order to backout all the lrp through layers
+    # you need to register hooks here.
+    model.bert.embeddings.register_forward_hook(
+        get_activation('model.bert.embeddings'))
+
 def gelu(x):
     """Implementation of the gelu activation function.
         For information: OpenAI GPT's gelu is slightly different (and gives slightly different results):
@@ -442,7 +478,7 @@ class ContextBertModel(nn.Module):
 class QACGBertForSequenceClassification(nn.Module):
     """Proposed Context-Aware Bert Model for Sequence Classification
     """
-    def __init__(self, config, num_labels, init_weight=False):
+    def __init__(self, config, num_labels, init_weight=False, init_lrp=False):
         super(QACGBertForSequenceClassification, self).__init__()
         self.bert = ContextBertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -486,6 +522,9 @@ class QACGBertForSequenceClassification(nn.Module):
             layer_module.attention.self.lambda_k_key_layer.weight.data.normal_(mean=0.0, std=init_perturbation)
 
         #######################################################################
+        if init_lrp:
+            print("init_lrp = True")
+            init_hooks_lrp(self)
 
     def forward(self, input_ids, token_type_ids, attention_mask, seq_lens,
                 device=None, labels=None,

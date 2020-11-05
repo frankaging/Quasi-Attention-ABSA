@@ -207,7 +207,8 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
                                num_train_steps=None,
                                learning_rate=None,
                                base_learning_rate=None,
-                               warmup_proportion=None):
+                               warmup_proportion=None,
+                               init_lrp=False):
 
     # this is the model we develop
     tokenizer = FullTokenizer(
@@ -243,13 +244,15 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         logger.info("model = QACGBERT")
         model = QACGBertForSequenceClassification(
                     bert_config, len(label_list),
-                    init_weight=True)
+                    init_weight=True,
+                    init_lrp=init_lrp)
     else:
         assert False
     if init_checkpoint is not None:
         logger.info("retraining with saved model.")
         # only load fields that are avaliable
         if "checkpoint" in init_checkpoint:
+            logger.info("loading a best checkpoint, not BERT pretrain.")
             # we need to add handling logic specially for parallel gpu trainign
             state_dict = torch.load(init_checkpoint, map_location='cpu')
             from collections import OrderedDict

@@ -13,7 +13,7 @@ def run(args):
     # TODO: add a argument about it
     if True:
         # we will first evaluate the just pretrain BERT model
-        logger.info("***** Evaluation Teacher Model *****")
+        logger.info("***** Evaluation Plain BERT Pretrain Model *****")
         _ = evaluate_fast(test_dataloader, model, device, n_gpu, args)
 
     # main training step    

@@ -364,7 +364,9 @@ def data_and_model_loader(device, n_gpu, args):
         train_sampler = RandomSampler(train_data)
     else:
         train_sampler = DistributedSampler(train_data)
-    train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+    train_dataloader = DataLoader(train_data, sampler=train_sampler, 
+                                  batch_size=args.train_batch_size,
+                                  num_workers=10)
 
     # test set
     test_examples = processor.get_test_examples(args.data_dir)
@@ -382,7 +384,8 @@ def data_and_model_loader(device, n_gpu, args):
 
     test_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                 all_label_ids, all_seq_len, all_context_ids)
-    test_dataloader = DataLoader(test_data, batch_size=args.eval_batch_size, shuffle=False)
+    test_dataloader = DataLoader(test_data, batch_size=args.eval_batch_size, shuffle=False,
+                                 num_workers=10)
 
     if args.local_rank != -1:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
@@ -452,7 +455,7 @@ def evaluate_fast(test_dataloader, model, device, n_gpu, args):
     y_pred = np.concatenate(y_pred, axis=0)
     score = np.concatenate(score, axis=0)
 
-    logger.info("***** Evaluation results *****")
+    logger.info("***** Fast Evaluation results *****")
     result = collections.OrderedDict()
     # handling corner case for a checkpoint start
     result = {'test_loss': test_loss,
@@ -483,15 +486,7 @@ def evaluate_fast(test_dataloader, model, device, n_gpu, args):
     for key in result.keys():
         logger.info("  %s = %s\n", key, str(result[key]))
 
-    # save for each time point
-    if args.task_name == "sentihood_NLI_M":
-        if aspect_strict_Acc > global_best_acc:
-            global_best_acc = aspect_strict_Acc
-    else:
-        if aspect_F > global_best_acc:
-            global_best_acc = aspect_F
-
-    return global_best_acc
+    return -1
 
 
 def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch, 

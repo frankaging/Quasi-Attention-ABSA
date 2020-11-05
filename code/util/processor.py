@@ -91,7 +91,7 @@ class Sentihood_NLI_M_Processor(DataProcessor):
             text_a = convert_to_unicode(str(line[1]))
             text_b = convert_to_unicode(str(line[2]))
             label = convert_to_unicode(str(line[3]))
-            if i%1000==0 and debug:
+            if i==0 and debug:
                 print(i)
                 print("guid=",guid)
                 print("text_a=",text_a)
@@ -132,7 +132,7 @@ class Semeval_NLI_M_Processor(DataProcessor):
             text_a = convert_to_unicode(str(line[3]))
             text_b = convert_to_unicode(str(line[2]))
             label = convert_to_unicode(str(line[1]))
-            if i%1000==0 and debug:
+            if i==0 and debug:
                 print(i)
                 print("guid=",guid)
                 print("text_a=",text_a)

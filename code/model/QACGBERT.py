@@ -346,9 +346,7 @@ class ContextBERTSelfAttention(nn.Module):
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
-        print(quasi_attention_prob)
-
-        return context_layer, new_attention_probs, attention_probs, quasi_attention_prob
+        return context_layer, new_attention_probs, attention_probs, quasi_attention_scores
 
 class BERTSelfOutput(nn.Module):
     def __init__(self, config):

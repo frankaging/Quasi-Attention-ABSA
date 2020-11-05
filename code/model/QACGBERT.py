@@ -608,8 +608,8 @@ class QACGBertForSequenceClassification(nn.Module):
                 pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
             # collect for heads
             lat_a_h.append(pre_a_h.data)
-            lat_a_self_h.append(pre_a_h.data)
-            lat_a_quasi_h.append(pre_a_h.data)
+            lat_a_self_h.append(pre_a_self_h.data)
+            lat_a_quasi_h.append(pre_a_quasi_h.data)
 
         lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
         lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)

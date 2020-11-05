@@ -616,12 +616,12 @@ class QACGBertForSequenceClassification(nn.Module):
         # lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
         # lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
 
-        a_h = func_activations[layer_name_self][1][0] # b, h, l, l
-        a_self_h = func_activations[layer_name_self][2][0]
-        a_quasi_h = func_activations[layer_name_self][3][0]
+        a_h = func_activations[layer_name_self][1][0][:,0] # b, l, l
+        a_self_h = func_activations[layer_name_self][2][0][:,0]
+        a_quasi_h = func_activations[layer_name_self][3][0][:,0]
 
-        a_h = a_h.sum(dim=1).sum(dim=2)
-        a_self_h = a_self_h.sum(dim=1).sum(dim=2)
-        a_quasi_h = a_quasi_h.sum(dim=1).sum(dim=2)
+        a_h = a_h.sum(dim=1)
+        a_self_h = a_self_h.sum(dim=1)
+        a_quasi_h = a_quasi_h.sum(dim=1)
 
         return a_h, a_self_h, a_quasi_h

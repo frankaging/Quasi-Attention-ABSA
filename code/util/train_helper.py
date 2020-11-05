@@ -262,7 +262,7 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
                     new_state_dict[k]=v
             model.load_state_dict(new_state_dict)
         else:
-            model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'))
+            model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'), strict=False)
     no_decay = ['bias', 'gamma', 'beta']
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() 

@@ -15,4 +15,4 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 python run_classifier.py \
 --init_checkpoint ../models/BERT-Google/pytorch_model.bin \
 --seed 42 \
 --context_standalone \
---evaluate_interval 100
+--evaluate_interval 250

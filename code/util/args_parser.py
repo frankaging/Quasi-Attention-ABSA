@@ -34,15 +34,16 @@ parser.add_argument("--context_standalone",
                     default=False,
                     action='store_true',
                     help="Whether the seperate the context from inputs.")
+parser.add_argument("--evaluate_interval",
+                    default=100,
+                    type=int,
+                    action='store_true',
+                    help="How many global steps pass do we evaluate during training.")
 parser.add_argument("--bert_config_file",
                     default=None,
                     type=str,
                     help="The config json file corresponding to the pre-trained BERT model. \n"
                             "This specifies the model architecture.")
-parser.add_argument("--embed_file",
-                    default=None,
-                    type=str,
-                    help="The embedding file that the model was trained on.")
 parser.add_argument("--init_checkpoint",
                     default=None,
                     type=str,

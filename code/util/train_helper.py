@@ -365,8 +365,7 @@ def data_and_model_loader(device, n_gpu, args):
     else:
         train_sampler = DistributedSampler(train_data)
     train_dataloader = DataLoader(train_data, sampler=train_sampler, 
-                                  batch_size=args.train_batch_size,
-                                  num_workers=10)
+                                  batch_size=args.train_batch_size)
 
     # test set
     test_examples = processor.get_test_examples(args.data_dir)
@@ -384,8 +383,7 @@ def data_and_model_loader(device, n_gpu, args):
 
     test_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                 all_label_ids, all_seq_len, all_context_ids)
-    test_dataloader = DataLoader(test_data, batch_size=args.eval_batch_size, shuffle=False,
-                                 num_workers=10)
+    test_dataloader = DataLoader(test_data, batch_size=args.eval_batch_size, shuffle=False)
 
     if args.local_rank != -1:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],

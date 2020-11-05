@@ -14,7 +14,7 @@ def run(args):
     global_step = 0
     global_best_acc = -1
     epoch=0
-    evaluate_interval = 500
+    evaluate_interval = 250
     # training epoch to eval
     for _ in trange(int(args.num_train_epochs), desc="Epoch"):
         # train a teacher model solving this task

@@ -449,6 +449,8 @@ class ContextBERTEncoder(nn.Module):
         print("in encoder")
 
         layer_name_self = 'model.bert.encoder.layer.' + str(0) + '.attention.self'
+        for k in func_activations.keys():
+            print(k)
         print(len(func_activations[layer_name_self]))
 
         pass

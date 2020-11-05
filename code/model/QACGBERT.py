@@ -383,7 +383,7 @@ class ContextBERTAttention(nn.Module):
             self.self.forward(input_tensor, attention_mask,
                               device, context_embedded)
         attention_output = self.output(self_output, input_tensor)
-        return attention_output
+        return attention_output, new_attention_probs, attention_probs, quasi_attention_prob
 
 class ContextBERTLayer(nn.Module):
     def __init__(self, config):
@@ -395,11 +395,12 @@ class ContextBERTLayer(nn.Module):
     def forward(self, hidden_states, attention_mask,
                 # optional parameters for saving context information
                 device=None, context_embedded=None):
-        attention_output = self.attention(hidden_states, attention_mask,
-                                          device, context_embedded)
+        attention_output, new_attention_probs, attention_probs, quasi_attention_prob = \
+            self.attention(hidden_states, attention_mask,
+                           device, context_embedded)
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
-        return layer_output
+        return layer_output, new_attention_probs, attention_probs, quasi_attention_prob
 
 class ContextBERTEncoder(nn.Module):
     def __init__(self, config):
@@ -421,6 +422,9 @@ class ContextBERTEncoder(nn.Module):
         # Just make sure the output context_embedded is in the 
         # shape of (batch_size, seq_len, d_hidden).
         all_encoder_layers = []
+        all_new_attention_probs = []
+        all_attention_probs = []
+        all_quasi_attention_prob = []
         layer_index = 0
         for layer_module in self.layer:
             # update context
@@ -428,12 +432,16 @@ class ContextBERTEncoder(nn.Module):
             deep_context_hidden = self.context_layer[layer_index](deep_context_hidden)
             deep_context_hidden += context_embeddings
             # BERT encoding
-            hidden_states = layer_module(hidden_states, attention_mask,
-                                         device, deep_context_hidden)
+            hidden_states, new_attention_probs, attention_probs, quasi_attention_prob = \
+                    layer_module(hidden_states, attention_mask,
+                                 device, deep_context_hidden)
             all_encoder_layers.append(hidden_states)
+            all_new_attention_probs.append(new_attention_probs.data)
+            all_attention_probs.append(attention_probs.data)
+            all_quasi_attention_prob.append(quasi_attention_prob.data)
             layer_index += 1
         #######################################################################
-        return all_encoder_layers
+        return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
 
 class ContextBertModel(nn.Module):
     """ Context-aware BERT base model
@@ -483,12 +491,13 @@ class ContextBertModel(nn.Module):
         context_embedding_output = torch.stack(seq_len*[context_embedded], dim=1)
         #######################################################################
 
-        all_encoder_layers = self.encoder(embedding_output, extended_attention_mask,
-                                          device,
-                                          context_embedding_output)
+        all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob = \
+            self.encoder(embedding_output, extended_attention_mask,
+                         device,
+                         context_embedding_output)
         sequence_output = all_encoder_layers[-1]
         pooled_output = self.pooler(sequence_output, attention_mask)
-        return pooled_output
+        return pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
 
 class QACGBertForSequenceClassification(nn.Module):
     """Proposed Context-Aware Bert Model for Sequence Classification
@@ -547,7 +556,7 @@ class QACGBertForSequenceClassification(nn.Module):
                 # optional parameters for saving context information
                 context_ids=None):
 
-        pooled_output = \
+        pooled_output, _, _, _ = \
             self.bert(input_ids, token_type_ids, attention_mask,
                       device, context_ids)
         

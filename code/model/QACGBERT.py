@@ -37,7 +37,7 @@ def get_activation(name):
 
 def get_activation_multi(name):
     def hook(model, input, output):
-        prinnt("!!!")
+        print("!!!")
         func_activations[name] = [_out for _out in output]
     return hook
 

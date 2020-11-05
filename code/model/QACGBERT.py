@@ -379,8 +379,8 @@ class ContextBERTAttention(nn.Module):
     def forward(self, input_tensor, attention_mask,
                 # optional parameters for saving context information
                 device=None, context_embedded=None):
-        self_output = self.self.forward(input_tensor, attention_mask,
-                                device, context_embedded)
+        self_output, _, _, _ = self.self.forward(input_tensor, attention_mask,
+                                                 device, context_embedded)
         attention_output = self.output(self_output, input_tensor)
         return attention_output
 

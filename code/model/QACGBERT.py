@@ -286,8 +286,8 @@ class ContextBERTSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(self, hidden_states, attention_mask,
-                      # optional parameters for saving context information
-                      device=None, context_embedded=None):
+                # optional parameters for saving context information
+                device=None, context_embedded=None):
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
         mixed_value_layer = self.value(hidden_states)
@@ -594,7 +594,9 @@ class QACGBertForSequenceClassification(nn.Module):
             pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
             pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
             for i in reversed(range(num_layers)):
+                
                 layer_name_self = 'model.bert.encoder.layer.' + str(i) + '.attention.self'
+                print(func_activations[layer_name_self])
                 a_h = func_activations[layer_name_self][1][:,h] # b, l, l
                 a_self_h = func_activations[layer_name_self][2][:,h]
                 a_quasi_h = func_activations[layer_name_self][3][:,h]

@@ -593,7 +593,7 @@ class QACGBertForSequenceClassification(nn.Module):
             pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
             for i in reversed(range(num_layers)):
                 layer_name_self = 'model.bert.encoder.' + str(i) + '.attention.self'
-                print(func_activations[layer_name_self][1].shape)
+                print(len(func_activations[layer_name_self]))
                 a_h = func_activations[layer_name_self][1][:,h] # b, l, l
                 a_self_h = func_activations[layer_name_self][2][:,h]
                 a_quasi_h = func_activations[layer_name_self][3][:,h]

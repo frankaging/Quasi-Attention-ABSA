@@ -37,7 +37,6 @@ def get_activation(name):
 
 def get_activation_multi(name):
     def hook(model, input, output):
-        print("!")
         func_activations[name] = [_out for _out in output]
     return hook
 
@@ -446,6 +445,14 @@ class ContextBERTEncoder(nn.Module):
         #######################################################################
         return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
 
+    def backward_lat(self, attention_scores):
+        print("in encoder")
+
+        layer_name_self = 'model.bert.encoder.layer.' + str(0) + '.attention.self'
+        print(len(func_activations[layer_name_self]))
+
+        pass
+
 class ContextBertModel(nn.Module):
     """ Context-aware BERT base model
     """
@@ -501,6 +508,11 @@ class ContextBertModel(nn.Module):
         sequence_output = all_encoder_layers[-1]
         pooled_output = self.pooler(sequence_output, attention_mask)
         return pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
+
+    def backward_lat(self, attention_scores):
+        self.encoder.backward_lat(attention_scores)
+
+        return attention_scores
 
 class QACGBertForSequenceClassification(nn.Module):
     """Proposed Context-Aware Bert Model for Sequence Classification
@@ -582,36 +594,39 @@ class QACGBertForSequenceClassification(nn.Module):
         return sensitivity_grads
 
     def backward_lat(self, attention_scores):
-        # for lat, we only cares about the attention weights
-        num_layers = self.config.num_hidden_layers
-        num_heads = self.config.num_attention_heads
 
-        # we simply repeat for all heads as they start off equally
-        lat_a_h = []
-        lat_a_self_h = []
-        lat_a_quasi_h = []
-        for h in range(num_heads):
-            pre_a_h = attention_scores.unsqueeze(1) # span out for seq_len
-            pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
-            pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
-            for i in reversed(range(num_layers)):
+        self.bert.backward_lat(attention_scores)
+
+        # # for lat, we only cares about the attention weights
+        # num_layers = self.config.num_hidden_layers
+        # num_heads = self.config.num_attention_heads
+
+        # # we simply repeat for all heads as they start off equally
+        # lat_a_h = []
+        # lat_a_self_h = []
+        # lat_a_quasi_h = []
+        # for h in range(num_heads):
+        #     pre_a_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     for i in reversed(range(num_layers)):
                 
-                layer_name_self = 'model.bert.encoder.layer.' + str(i) + '.attention.self'
-                print(func_activations[layer_name_self])
-                a_h = func_activations[layer_name_self][1][:,h] # b, l, l
-                a_self_h = func_activations[layer_name_self][2][:,h]
-                a_quasi_h = func_activations[layer_name_self][3][:,h]
-                # propagate
-                pre_a_h = torch.matmul(pre_a_h, a_h)
-                pre_a_self_h = torch.matmul(pre_a_self_h, a_self_h)
-                pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
-            # collect for heads
-            lat_a_h.append(pre_a_h.data)
-            lat_a_self_h.append(pre_a_h.data)
-            lat_a_quasi_h.append(pre_a_h.data)
+        #         layer_name_self = 'model.bert.encoder.layer.' + str(i) + '.attention.self'
+        #         print(func_activations[layer_name_self])
+        #         a_h = func_activations[layer_name_self][1][:,h] # b, l, l
+        #         a_self_h = func_activations[layer_name_self][2][:,h]
+        #         a_quasi_h = func_activations[layer_name_self][3][:,h]
+        #         # propagate
+        #         pre_a_h = torch.matmul(pre_a_h, a_h)
+        #         pre_a_self_h = torch.matmul(pre_a_self_h, a_self_h)
+        #         pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
+        #     # collect for heads
+        #     lat_a_h.append(pre_a_h.data)
+        #     lat_a_self_h.append(pre_a_h.data)
+        #     lat_a_quasi_h.append(pre_a_h.data)
 
-        lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
-        lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
-        lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
+        # lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
+        # lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
+        # lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
 
-        return lat_a_h, lat_a_self_h, lat_a_quasi_h
+        return attention_scores

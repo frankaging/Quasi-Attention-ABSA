@@ -250,10 +250,19 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         logger.info("retraining with saved model.")
         # only load fields that are avaliable
         if "checkpoint" in init_checkpoint:
-            # load full is it is not google BERT original pretrain
-            model.load_state_dict(torch.load(init_checkpoint, map_location='cpu'), strict=False)
+            # we need to add handling logic specially for parallel gpu trainign
+            state_dict = torch.load(init_checkpoint, map_location='cpu')
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                if k.startswith('module.'):
+                    name = k[7:] # remove 'module.' of dataparallel
+                    new_state_dict[name]=v
+                else:
+                    new_state_dict[k]=v
+            model.load_state_dict(new_state_dict)
         else:
-            model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'), strict=False)
+            model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'))
     no_decay = ['bias', 'gamma', 'beta']
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() 
@@ -552,18 +561,18 @@ def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch,
         loss_tr = 0.0
     else:
         loss_tr = tr_loss/nb_tr_steps
-    result = {'epoch': epoch,
-              'global_step': global_step,
-              'loss': loss_tr,
-              'test_loss': test_loss,
-              'test_accuracy': test_accuracy}
 
     # for ABSA tasks, we need more evaluations
     if args.task_name == "sentihood_NLI_M":
         aspect_strict_Acc = sentihood_strict_acc(y_true, y_pred)
         aspect_Macro_F1 = sentihood_macro_F1(y_true, y_pred)
         aspect_Macro_AUC, sentiment_Acc, sentiment_Macro_AUC = sentihood_AUC_Acc(y_true, score)
-        result = {'aspect_strict_Acc': aspect_strict_Acc,
+        result = {'epoch': epoch,
+                  'global_step': global_step,
+                  'loss': loss_tr,
+                  'test_loss': test_loss,
+                  'test_accuracy': test_accuracy,
+                  'aspect_strict_Acc': aspect_strict_Acc,
                   'aspect_Macro_F1': aspect_Macro_F1,
                   'aspect_Macro_AUC': aspect_Macro_AUC,
                   'sentiment_Acc': sentiment_Acc,
@@ -573,7 +582,12 @@ def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch,
         sentiment_Acc_4_classes = semeval_Acc(y_true, y_pred, score, 4)
         sentiment_Acc_3_classes = semeval_Acc(y_true, y_pred, score, 3)
         sentiment_Acc_2_classes = semeval_Acc(y_true, y_pred, score, 2)
-        result = {'aspect_P': aspect_P,
+        result = {'epoch': epoch,
+                  'global_step': global_step,
+                  'loss': loss_tr,
+                  'test_loss': test_loss,
+                  'test_accuracy': test_accuracy,
+                  'aspect_P': aspect_P,
                   'aspect_R': aspect_R,
                   'aspect_F': aspect_F,
                   'sentiment_Acc_4_classes': sentiment_Acc_4_classes,

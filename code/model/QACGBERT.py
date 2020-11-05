@@ -37,6 +37,7 @@ def get_activation(name):
 
 def get_activation_multi(name):
     def hook(model, input, output):
+        prinnt("!!!")
         func_activations[name] = [_out for _out in output]
     return hook
 
@@ -55,15 +56,16 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
-    model.bert
+    model.bert.encoder.register_forward_hook(
+        get_activation_multi('model.bert.embeddings'))
 
-    layer_module_index = 0
-    for module_layer in model.bert.encoder.layer:
-        layer_name_self = 'model.bert.encoder.layer.' + str(layer_module_index) + \
-                          '.attention.self'
-        module_layer.attention.self.register_forward_hook(
-            get_activation_multi(layer_name_self))
-        layer_module_index += 1
+    # layer_module_index = 0
+    # for module_layer in model.bert.encoder.layer:
+    #     layer_name_self = 'model.bert.encoder.layer.' + str(layer_module_index) + \
+    #                       '.attention.self'
+    #     module_layer.attention.self.register_forward_hook(
+    #         get_activation_multi(layer_name_self))
+    #     layer_module_index += 1
 
 def gelu(x):
     """Implementation of the gelu activation function.

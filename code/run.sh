@@ -7,6 +7,7 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 python run_classifier.py \
 --do_lower_case \
 --max_seq_length 512 \
 --train_batch_size 48 \
+--eval_batch_size 48 \
 --learning_rate 2e-5 \
 --num_train_epochs 25 \
 --vocab_file ../models/BERT-Google/vocab.txt \

@@ -173,7 +173,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
 
         # Zero-pad up to the sequence length.
         seq_len = len(input_ids)
-        context_len = len(context_ids)
         while len(input_ids) < max_seq_length:
             input_ids.append(0)
             input_mask.append(0)
@@ -394,6 +393,107 @@ def data_and_model_loader(device, n_gpu, args):
 
     return model, optimizer, train_dataloader, test_dataloader
 
+def evaluate_fast(test_dataloader, model, device, n_gpu, args):
+    """
+    evaluate only and not recording anything
+    """
+    model.eval()
+    test_loss, test_accuracy = 0, 0
+    nb_test_steps, nb_test_examples = 0, 0
+    pbar = tqdm(test_dataloader, desc="Iteration")
+    y_true, y_pred, score = [], [], []
+    # we don't need gradient in this case.
+    with torch.no_grad():
+        for _, batch in enumerate(pbar):
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            # truncate to save space and computing resource
+            input_ids, input_mask, segment_ids, label_ids, seq_lens, \
+                context_ids = batch
+            max_seq_lens = max(seq_lens)[0]
+            input_ids = input_ids[:,:max_seq_lens]
+            input_mask = input_mask[:,:max_seq_lens]
+            segment_ids = segment_ids[:,:max_seq_lens]
+
+            input_ids = input_ids.to(device)
+            input_mask = input_mask.to(device)
+            segment_ids = segment_ids.to(device)
+            label_ids = label_ids.to(device)
+            seq_lens = seq_lens.to(device)
+            context_ids = context_ids.to(device)
+
+            # intentially with gradient
+            tmp_test_loss, logits = \
+                model(input_ids, segment_ids, input_mask, seq_lens,
+                        device=device, labels=label_ids,
+                        context_ids=context_ids)
+
+            logits = F.softmax(logits, dim=-1)
+            logits = logits.detach().cpu().numpy()
+            label_ids = label_ids.to('cpu').numpy()
+            outputs = np.argmax(logits, axis=1)
+            tmp_test_accuracy=np.sum(outputs == label_ids)
+
+            y_true.append(label_ids)
+            y_pred.append(outputs)
+            score.append(logits)
+
+            test_loss += tmp_test_loss.mean().item()
+            test_accuracy += tmp_test_accuracy
+
+            nb_test_examples += input_ids.size(0)
+            nb_test_steps += 1
+
+        test_loss = test_loss / nb_test_steps
+        test_accuracy = test_accuracy / nb_test_examples
+
+    # we follow previous works in calculating the metrics
+    y_true = np.concatenate(y_true, axis=0)
+    y_pred = np.concatenate(y_pred, axis=0)
+    score = np.concatenate(score, axis=0)
+
+    logger.info("***** Evaluation results *****")
+    result = collections.OrderedDict()
+    # handling corner case for a checkpoint start
+    result = {'test_loss': test_loss,
+              'test_accuracy': test_accuracy}
+
+    # for ABSA tasks, we need more evaluations
+    if args.task_name == "sentihood_NLI_M":
+        aspect_strict_Acc = sentihood_strict_acc(y_true, y_pred)
+        aspect_Macro_F1 = sentihood_macro_F1(y_true, y_pred)
+        aspect_Macro_AUC, sentiment_Acc, sentiment_Macro_AUC = sentihood_AUC_Acc(y_true, score)
+        result = {'aspect_strict_Acc': aspect_strict_Acc,
+                  'aspect_Macro_F1': aspect_Macro_F1,
+                  'aspect_Macro_AUC': aspect_Macro_AUC,
+                  'sentiment_Acc': sentiment_Acc,
+                  'sentiment_Macro_AUC': sentiment_Macro_AUC}
+    else:
+        aspect_P, aspect_R, aspect_F = semeval_PRF(y_true, y_pred)
+        sentiment_Acc_4_classes = semeval_Acc(y_true, y_pred, score, 4)
+        sentiment_Acc_3_classes = semeval_Acc(y_true, y_pred, score, 3)
+        sentiment_Acc_2_classes = semeval_Acc(y_true, y_pred, score, 2)
+        result = {'aspect_P': aspect_P,
+                  'aspect_R': aspect_R,
+                  'aspect_F': aspect_F,
+                  'sentiment_Acc_4_classes': sentiment_Acc_4_classes,
+                  'sentiment_Acc_3_classes': sentiment_Acc_3_classes,
+                  'sentiment_Acc_2_classes': sentiment_Acc_2_classes}
+
+    for key in result.keys():
+        logger.info("  %s = %s\n", key, str(result[key]))
+
+    # save for each time point
+    if args.task_name == "sentihood_NLI_M":
+        if aspect_strict_Acc > global_best_acc:
+            global_best_acc = aspect_strict_Acc
+    else:
+        if aspect_F > global_best_acc:
+            global_best_acc = aspect_F
+
+    return global_best_acc
+
+
 def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch, 
              global_step, output_log_file, global_best_acc, args):
 
@@ -448,9 +548,9 @@ def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch,
         test_accuracy = test_accuracy / nb_test_examples
 
     # we follow previous works in calculating the metrics
-    y_true = torch.cat(y_true, dim=0).numpy()
-    y_pred = torch.cat(y_pred, dim=0).numpy()
-    score = torch.cat(score, dim=0).numpy()
+    y_true = np.concatenate(y_true, axis=0)
+    y_pred = np.concatenate(y_pred, axis=0)
+    score = np.concatenate(score, axis=0)
 
     logger.info("***** Evaluation results *****")
     result = collections.OrderedDict()

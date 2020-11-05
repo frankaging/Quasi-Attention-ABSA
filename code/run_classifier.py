@@ -10,6 +10,12 @@ def run(args):
     model, optimizer, train_dataloader, test_dataloader = \
         data_and_model_loader(device, n_gpu, args)
 
+    # TODO: add a argument about it
+    if False:
+        # we will first evaluate the just pretrain BERT model
+        logger.info("***** Evaluation Teacher Model *****")
+        _ = evaluate_fast(test_dataloader, model, device, n_gpu, args)
+
     # main training step    
     global_step = 0
     global_best_acc = -1

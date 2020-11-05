@@ -11,7 +11,7 @@ def run(args):
         data_and_model_loader(device, n_gpu, args)
 
     # TODO: add a argument about it
-    if True:
+    if False:
         # we will first evaluate the just pretrain BERT model
         logger.info("***** Evaluation Plain BERT Pretrain Model *****")
         _ = evaluate_fast(test_dataloader, model, device, n_gpu, args)

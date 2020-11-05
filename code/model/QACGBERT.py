@@ -59,6 +59,7 @@ def init_hooks_lrp(model):
     for module_layer in model.bert.encoder.layer:
         layer_name_self = 'model.bert.encoder.' + str(layer_module_index) + \
                           '.attention.self'
+        print(layer_module_index)
         module_layer.attention.self.register_forward_hook(
             get_activation_multi(layer_name_self))
         layer_module_index += 1

@@ -552,7 +552,7 @@ def step_train(train_dataloader, test_dataloader, model, optimizer,
             global_step += 1
         pbar.set_postfix({'train_loss': loss.tolist()})
 
-        if global_step % 500 == 0:
+        if global_step % evaluate_interval == 0:
             logger.info("***** Evaluation Interval Hit *****")
             global_best_acc = evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch, 
                                        global_step, output_log_file, global_best_acc, args)

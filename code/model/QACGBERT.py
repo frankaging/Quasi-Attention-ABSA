@@ -54,6 +54,14 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
+    layer_module_index = 0
+    for module_layer in model.bert.encoder.layer:
+        layer_name_self = 'model.bert.encoder.' + str(layer_module_index) + \
+                                '.attention.self'
+        module_layer.attention.self.register_forward_hook(
+            get_activation_multi(layer_name_self))
+        layer_module_index += 1
+
 def gelu(x):
     """Implementation of the gelu activation function.
         For information: OpenAI GPT's gelu is slightly different (and gives slightly different results):
@@ -320,7 +328,8 @@ class ContextBERTSelfAttention(nn.Module):
         lambda_k_scalar = 1.0
         lambda_context = lambda_q_scalar*lambda_q + lambda_k_scalar*lambda_k
         lambda_context = (1 - lambda_context)
-        new_attention_probs = attention_probs + lambda_context * quasi_attention_scores
+        quasi_attention_prob = lambda_context * quasi_attention_scores
+        new_attention_probs = attention_probs + quasi_attention_prob
         ######################################################################
 
         value_layer = self.transpose_for_scores(mixed_value_layer)
@@ -333,7 +342,7 @@ class ContextBERTSelfAttention(nn.Module):
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
-        return context_layer
+        return context_layer, new_attention_probs, attention_probs, quasi_attention_prob
 
 class BERTSelfOutput(nn.Module):
     def __init__(self, config):
@@ -489,6 +498,7 @@ class QACGBertForSequenceClassification(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
         self.num_head = config.num_attention_heads
+        self.config = config
         if init_weight:
             print("init_weight = True")
             def init_weights(module):
@@ -558,5 +568,35 @@ class QACGBertForSequenceClassification(nn.Module):
                                                 grad_outputs=sensitivity_grads)[0]
         return sensitivity_grads
 
-    def backward_lat(self):
-        pass
+    def backward_lat(self, attention_scores):
+        # for lat, we only cares about the attention weights
+        num_layers = self.config.num_hidden_layers
+        num_heads = self.config.num_attention_heads
+
+        # we simply repeat for all heads as they start off equally
+        lat_a_h = []
+        lat_a_self_h = []
+        lat_a_quasi_h = []
+        for h in range(num_heads):
+            pre_a_h = attention_scores.unsqueeze(1) # span out for seq_len
+            pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
+            pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
+            for i in reversed(range(num_layers)):
+                layer_name_self = 'model.bert.encoder.' + str(i) + '.attention.self'
+                a_h = func_activations[layer_name_self][1][:,h] # b, l, l
+                a_self_h = func_activations[layer_name_self][2][:,h]
+                a_quasi_h = func_activations[layer_name_self][3][:,h]
+                # propagate
+                pre_a_h = torch.matmul(pre_a_h, a_h)
+                pre_a_self_h = torch.matmul(pre_a_self_h, a_self_h)
+                pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
+            # collect for heads
+            lat_a_h.append(pre_a_h.data)
+            lat_a_self_h.append(pre_a_h.data)
+            lat_a_quasi_h.append(pre_a_h.data)
+
+        lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
+        lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
+        lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
+
+        return lat_a_h, lat_a_self_h, lat_a_quasi_h

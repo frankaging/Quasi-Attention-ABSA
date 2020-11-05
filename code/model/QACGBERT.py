@@ -31,7 +31,6 @@ def get_inputivation(name):
 
 def get_activation(name):
     def hook(model, input, output):
-        print("?")
         func_activations[name] = output
     return hook
 

@@ -36,7 +36,6 @@ def get_activation(name):
 
 def get_activation_multi(name):
     def hook(model, input, output):
-        print(name)
         func_activations[name] = [_out for _out in output]
     return hook
 
@@ -55,13 +54,10 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
-    print("!!!!!")
-
     layer_module_index = 0
     for module_layer in model.bert.encoder.layer:
-        layer_name_self = 'model.bert.encoder.' + str(layer_module_index) + \
+        layer_name_self = 'model.bert.encoder.layer.' + str(layer_module_index) + \
                           '.attention.self'
-        print(layer_module_index)
         module_layer.attention.self.register_forward_hook(
             get_activation_multi(layer_name_self))
         layer_module_index += 1
@@ -346,7 +342,7 @@ class ContextBERTSelfAttention(nn.Module):
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
-        print(new_attention_probs)
+
         return context_layer, new_attention_probs, attention_probs, quasi_attention_prob
 
 class BERTSelfOutput(nn.Module):
@@ -597,8 +593,7 @@ class QACGBertForSequenceClassification(nn.Module):
             pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
             pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
             for i in reversed(range(num_layers)):
-                layer_name_self = 'model.bert.encoder.' + str(i) + '.attention.self'
-                print(len(func_activations[layer_name_self]))
+                layer_name_self = 'model.bert.encoder.layer.' + str(i) + '.attention.self'
                 a_h = func_activations[layer_name_self][1][:,h] # b, l, l
                 a_self_h = func_activations[layer_name_self][2][:,h]
                 a_quasi_h = func_activations[layer_name_self][3][:,h]

@@ -57,7 +57,7 @@ def init_hooks_lrp(model):
     layer_module_index = 0
     for module_layer in model.bert.encoder.layer:
         layer_name_self = 'model.bert.encoder.' + str(layer_module_index) + \
-                                '.attention.self'
+                          '.attention.self'
         module_layer.attention.self.register_forward_hook(
             get_activation_multi(layer_name_self))
         layer_module_index += 1
@@ -583,6 +583,7 @@ class QACGBertForSequenceClassification(nn.Module):
             pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
             for i in reversed(range(num_layers)):
                 layer_name_self = 'model.bert.encoder.' + str(i) + '.attention.self'
+                print(func_activations[layer_name_self][1].shape)
                 a_h = func_activations[layer_name_self][1][:,h] # b, l, l
                 a_self_h = func_activations[layer_name_self][2][:,h]
                 a_quasi_h = func_activations[layer_name_self][3][:,h]

@@ -1,5 +1,5 @@
 # example running command
-CUDA_VISIBLE_DEVICES=0,1,2 python run_classifier.py \
+CUDA_VISIBLE_DEVICES=5,6,7 python run_classifier.py \
 --task_name sentihood_NLI_M \
 --data_dir ../datasets/sentihood/ \
 --vocab_file ../models/BERT-Google/vocab.txt \

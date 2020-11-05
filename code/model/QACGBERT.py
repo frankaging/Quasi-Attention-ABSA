@@ -37,7 +37,6 @@ def get_activation(name):
 
 def get_activation_multi(name):
     def hook(model, input, output):
-        print("!!!")
         func_activations[name] = [_out for _out in output]
     return hook
 
@@ -57,7 +56,7 @@ def init_hooks_lrp(model):
         get_activation('model.bert.embeddings'))
 
     model.bert.encoder.register_forward_hook(
-        get_activation_multi('model.bert.embeddings'))
+        get_activation_multi('model.bert.encoder'))
 
     # layer_module_index = 0
     # for module_layer in model.bert.encoder.layer:
@@ -449,16 +448,6 @@ class ContextBERTEncoder(nn.Module):
         #######################################################################
         return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
 
-    def backward_lat(self, attention_scores):
-        print("in encoder")
-
-        layer_name_self = 'model.bert.encoder.layer.' + str(0) + '.attention.self'
-        for k in func_activations.keys():
-            print(k)
-        print(len(func_activations[layer_name_self]))
-
-        pass
-
 class ContextBertModel(nn.Module):
     """ Context-aware BERT base model
     """
@@ -514,11 +503,6 @@ class ContextBertModel(nn.Module):
         sequence_output = all_encoder_layers[-1]
         pooled_output = self.pooler(sequence_output, attention_mask)
         return pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
-
-    def backward_lat(self, attention_scores):
-        self.encoder.backward_lat(attention_scores)
-
-        return attention_scores
 
 class QACGBertForSequenceClassification(nn.Module):
     """Proposed Context-Aware Bert Model for Sequence Classification
@@ -601,7 +585,8 @@ class QACGBertForSequenceClassification(nn.Module):
 
     def backward_lat(self, attention_scores):
 
-        self.bert.backward_lat(attention_scores)
+        layer_name_self = 'model.bert.encoder'
+        print(len(func_activations[layer_name_self]))
 
         # # for lat, we only cares about the attention weights
         # num_layers = self.config.num_hidden_layers

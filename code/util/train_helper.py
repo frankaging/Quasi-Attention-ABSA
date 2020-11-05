@@ -201,7 +201,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
     
     return features
 
-def getModelOptimizerTokenizer(model_type, vocab_file, embed_file=None, 
+def getModelOptimizerTokenizer(model_type, vocab_file,
                                bert_config_file=None, init_checkpoint=None,
                                label_list=None,
                                do_lower_case=True,
@@ -332,7 +332,6 @@ def data_and_model_loader(device, n_gpu, args):
     model, optimizer, tokenizer = \
         getModelOptimizerTokenizer(model_type=args.model_type,
                                    vocab_file=args.vocab_file,
-                                   embed_file=args.embed_file,
                                    bert_config_file=args.bert_config_file,
                                    init_checkpoint=args.init_checkpoint,
                                    label_list=label_list,

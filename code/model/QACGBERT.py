@@ -217,8 +217,8 @@ class ContextBERTSelfAttention(nn.Module):
         # learnable context integration factors
         # enforce initialization to zero as to leave the pretrain model
         # unperturbed in the beginning
-        self.context_for_q = nn.Linear(self.attention_head_size, self.attention_head_size)
-        self.context_for_k = nn.Linear(self.attention_head_size, self.attention_head_size)
+        self.context_for_q = nn.Linear(config.hidden_size, self.attention_head_size)
+        self.context_for_k = nn.Linear(config.hidden_size, self.attention_head_size)
 
         self.lambda_q_context_layer = nn.Linear(self.attention_head_size, 1, bias=False)
         self.lambda_q_query_layer = nn.Linear(self.attention_head_size, 1, bias=False)

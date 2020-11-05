@@ -346,7 +346,7 @@ class ContextBERTSelfAttention(nn.Module):
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
-        return context_layer, new_attention_probs, attention_probs, quasi_attention_scores
+        return context_layer, new_attention_probs, attention_probs, quasi_attention_prob
 
 class BERTSelfOutput(nn.Module):
     def __init__(self, config):
@@ -440,9 +440,9 @@ class ContextBERTEncoder(nn.Module):
                     layer_module(hidden_states, attention_mask,
                                  device, deep_context_hidden)
             all_encoder_layers.append(hidden_states)
-            all_new_attention_probs.append(new_attention_probs.data)
-            all_attention_probs.append(attention_probs.data)
-            all_quasi_attention_prob.append(quasi_attention_prob.data)
+            all_new_attention_probs.append(new_attention_probs.clone())
+            all_attention_probs.append(attention_probs.clone())
+            all_quasi_attention_prob.append(quasi_attention_prob.clone())
             layer_index += 1
         #######################################################################
         return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
@@ -594,25 +594,34 @@ class QACGBertForSequenceClassification(nn.Module):
         lat_a_h = []
         lat_a_self_h = []
         lat_a_quasi_h = []
-        for h in range(num_heads):
-            pre_a_h = attention_scores.unsqueeze(1) # span out for seq_len
-            pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
-            pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
-            for i in reversed(range(num_layers)):
-                a_h = func_activations[layer_name_self][1][i][:,h] # b, l, l
-                a_self_h = func_activations[layer_name_self][2][i][:,h]
-                a_quasi_h = func_activations[layer_name_self][3][i][:,h]
-                # propagate
-                pre_a_h = torch.matmul(pre_a_h, a_h)
-                pre_a_self_h = torch.matmul(pre_a_self_h, a_self_h)
-                pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
-            # collect for heads
-            lat_a_h.append(pre_a_h.data)
-            lat_a_self_h.append(pre_a_self_h.data)
-            lat_a_quasi_h.append(pre_a_quasi_h.data)
 
-        lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
-        lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
-        lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
+        # for h in range(num_heads):
+        #     pre_a_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     pre_a_self_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
+        #     for i in reversed(range(num_layers)):
+        #         a_h = func_activations[layer_name_self][1][i][:,h] # b, l, l
+        #         a_self_h = func_activations[layer_name_self][2][i][:,h]
+        #         a_quasi_h = func_activations[layer_name_self][3][i][:,h]
+        #         # propagate
+        #         pre_a_h = torch.matmul(pre_a_h, a_h)
+        #         pre_a_self_h = torch.matmul(pre_a_self_h, a_self_h)
+        #         pre_a_quasi_h = torch.matmul(pre_a_quasi_h, a_quasi_h)
+        #     # collect for heads
+        #     lat_a_h.append(pre_a_h.data)
+        #     lat_a_self_h.append(pre_a_self_h.data)
+        #     lat_a_quasi_h.append(pre_a_quasi_h.data)
 
-        return lat_a_h, lat_a_self_h, lat_a_quasi_h
+        # lat_a_h = torch.cat(lat_a_h, dim=1).sum(dim=1) # b, l
+        # lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
+        # lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
+
+        a_h = func_activations[layer_name_self][1][0] # b, h, l, l
+        a_self_h = func_activations[layer_name_self][2][0]
+        a_quasi_h = func_activations[layer_name_self][3][0]
+
+        a_h = a_h.sum(dim=1).sum(dim=2)
+        a_self_h = a_self_h.sum(dim=1).sum(dim=2)
+        a_quasi_h = a_quasi_h.sum(dim=1).sum(dim=2)
+
+        return a_h, a_self_h, a_quasi_h

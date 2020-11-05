@@ -37,7 +37,6 @@ parser.add_argument("--context_standalone",
 parser.add_argument("--evaluate_interval",
                     default=100,
                     type=int,
-                    action='store_true',
                     help="How many global steps pass do we evaluate during training.")
 parser.add_argument("--bert_config_file",
                     default=None,

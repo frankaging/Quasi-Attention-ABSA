@@ -620,8 +620,8 @@ class QACGBertForSequenceClassification(nn.Module):
         a_self_h = func_activations[layer_name_self][2][0][:,0]
         a_quasi_h = func_activations[layer_name_self][3][0][:,0]
 
-        a_h = a_h.sum(dim=0)
-        a_self_h = a_self_h.sum(dim=0)
-        a_quasi_h = a_quasi_h.sum(dim=0)
+        a_h = a_h.sum(dim=2)
+        a_self_h = a_self_h.sum(dim=2)
+        a_quasi_h = a_quasi_h.sum(dim=2)
 
         return a_h, a_self_h, a_quasi_h

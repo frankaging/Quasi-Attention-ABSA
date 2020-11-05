@@ -55,6 +55,8 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
+    print("!!!!!")
+
     layer_module_index = 0
     for module_layer in model.bert.encoder.layer:
         layer_name_self = 'model.bert.encoder.' + str(layer_module_index) + \

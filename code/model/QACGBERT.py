@@ -54,17 +54,6 @@ def init_hooks_lrp(model):
     model.bert.embeddings.register_forward_hook(
         get_activation('model.bert.embeddings'))
 
-    model.bert.encoder.register_forward_hook(
-        get_activation_multi('model.bert.encoder'))
-
-    # layer_module_index = 0
-    # for module_layer in model.bert.encoder.layer:
-    #     layer_name_self = 'model.bert.encoder.layer.' + str(layer_module_index) + \
-    #                       '.attention.self'
-    #     module_layer.attention.self.register_forward_hook(
-    #         get_activation_multi(layer_name_self))
-    #     layer_module_index += 1
-
 def gelu(x):
     """Implementation of the gelu activation function.
         For information: OpenAI GPT's gelu is slightly different (and gives slightly different results):
@@ -560,7 +549,7 @@ class QACGBertForSequenceClassification(nn.Module):
                 # optional parameters for saving context information
                 context_ids=None):
 
-        pooled_output, _, _, _ = \
+        pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob = \
             self.bert(input_ids, token_type_ids, attention_mask,
                       device, context_ids)
         
@@ -571,7 +560,7 @@ class QACGBertForSequenceClassification(nn.Module):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
-            return loss, logits
+            return loss, logits, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
         else:
             return logits
 

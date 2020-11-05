@@ -601,7 +601,6 @@ class QACGBertForSequenceClassification(nn.Module):
             pre_a_quasi_h = attention_scores.unsqueeze(1) # span out for seq_len
             for i in reversed(range(num_layers)):
                 a_h = func_activations[layer_name_self][1][i][:,h] # b, l, l
-                print(a_h.shape)
                 a_self_h = func_activations[layer_name_self][2][i][:,h]
                 a_quasi_h = func_activations[layer_name_self][3][i][:,h]
                 # propagate
@@ -617,4 +616,4 @@ class QACGBertForSequenceClassification(nn.Module):
         lat_a_self_h = torch.cat(lat_a_self_h, dim=1).sum(dim=1)
         lat_a_quasi_h = torch.cat(lat_a_quasi_h, dim=1).sum(dim=1)
 
-        return attention_scores
+        return lat_a_h, lat_a_self_h, lat_a_quasi_h

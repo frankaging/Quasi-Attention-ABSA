@@ -322,7 +322,7 @@ class ContextBERTSelfAttention(nn.Module):
         lambda_context = (1 - lambda_context)
         quasi_attention_prob = lambda_context * quasi_attention_scores
         # new_attention_probs = attention_probs + quasi_attention_prob
-        new_attention_probs = attention_probs
+        new_attention_probs = quasi_attention_prob
         ######################################################################
 
         value_layer = self.transpose_for_scores(mixed_value_layer)

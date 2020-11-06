@@ -303,7 +303,7 @@ class ContextBERTSelfAttention(nn.Module):
         context_embedded_k_extend = \
             torch.stack(self.num_attention_heads * [context_embedded_k], dim=1)
 
-        quasi_attention_scores = torch.matmul(query_layer, context_embedded_k_extend.transpose(-1, -2))
+        quasi_attention_scores = torch.matmul(context_embedded_q_extend, context_embedded_k_extend.transpose(-1, -2))
         quasi_attention_scores = quasi_attention_scores / math.sqrt(self.attention_head_size)
         quasi_attention_scores = quasi_attention_scores + attention_mask
         quasi_scalar = 1.0

@@ -436,7 +436,7 @@ def evaluate_fast(test_dataloader, model, device, n_gpu, args):
             context_ids = context_ids.to(device)
 
             # intentially with gradient
-            tmp_test_loss, logits = \
+            tmp_test_loss, logits, _, _, _ = \
                 model(input_ids, segment_ids, input_mask, seq_lens,
                         device=device, labels=label_ids,
                         context_ids=context_ids)
@@ -528,7 +528,7 @@ def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch,
             context_ids = context_ids.to(device)
 
             # intentially with gradient
-            tmp_test_loss, logits = \
+            tmp_test_loss, logits, _, _, _ = \
                 model(input_ids, segment_ids, input_mask, seq_lens,
                         device=device, labels=label_ids,
                         context_ids=context_ids)
@@ -643,7 +643,7 @@ def step_train(train_dataloader, test_dataloader, model, optimizer,
         seq_lens = seq_lens.to(device)
         context_ids = context_ids.to(device)
 
-        loss, _ = \
+        loss, _, _, _, _ = \
             model(input_ids, segment_ids, input_mask, seq_lens,
                             device=device, labels=label_ids,
                             context_ids=context_ids)

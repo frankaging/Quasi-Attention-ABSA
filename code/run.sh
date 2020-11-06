@@ -1,13 +1,13 @@
 # example running command
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 python run_classifier.py \
+CUDA_VISIBLE_DEVICES=0,3,4 python run_classifier.py \
 --task_name sentihood_NLI_M \
 --data_dir ../datasets/sentihood/ \
---output_dir ../results/sentihood/QACGBERT/ \
+--output_dir ../results/sentihood/QACGBERT-Update/ \
 --model_type QACGBERT \
 --do_lower_case \
 --max_seq_length 512 \
---train_batch_size 48 \
---eval_batch_size 48 \
+--train_batch_size 24 \
+--eval_batch_size 24 \
 --learning_rate 2e-5 \
 --num_train_epochs 25 \
 --vocab_file ../models/BERT-Google/vocab.txt \

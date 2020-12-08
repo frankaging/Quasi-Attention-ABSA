@@ -284,14 +284,14 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
             {'params': model.classifier.parameters(), 'lr': 1e-4},
         )
         for layer_module in model.bert.encoder.layer:
-            optimizer_parameters.append(
+            optimizer_parameters.extend([
                 {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': 1e-4},
                 {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': 1e-4},
                 {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': 1e-4},
                 {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': 1e-4},
                 {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': 1e-4},
                 {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': 1e-4},
-            )
+            ])
     else:
         assert False
 

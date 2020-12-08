@@ -272,7 +272,8 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
                   'lambda_q_context_layer', 
                   'lambda_k_context_layer',
                   'lambda_q_query_layer',
-                  'lambda_k_key_layer']
+                  'lambda_k_key_layer',
+                  'classifier']
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() 
             if not any(nd in n for nd in no_decay) and not any(bl in n for bl in block_list)], 'weight_decay_rate': 0.01},

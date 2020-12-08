@@ -322,6 +322,7 @@ class ContextBERTSelfAttention(nn.Module):
         lambda_context = (1 - lambda_context)
         quasi_attention_prob = lambda_context * quasi_attention_scores
         new_attention_probs = attention_probs + quasi_attention_prob
+
         ######################################################################
 
         value_layer = self.transpose_for_scores(mixed_value_layer)
@@ -335,7 +336,7 @@ class ContextBERTSelfAttention(nn.Module):
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
-        return context_layer, new_attention_probs, attention_probs, quasi_attention_prob
+        return context_layer, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context
 
 class BERTSelfOutput(nn.Module):
     def __init__(self, config):
@@ -372,11 +373,11 @@ class ContextBERTAttention(nn.Module):
     def forward(self, input_tensor, attention_mask,
                 # optional parameters for saving context information
                 device=None, context_embedded=None):
-        self_output, new_attention_probs, attention_probs, quasi_attention_prob = \
+        self_output, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context = \
             self.self.forward(input_tensor, attention_mask,
                               device, context_embedded)
         attention_output = self.output(self_output, input_tensor)
-        return attention_output, new_attention_probs, attention_probs, quasi_attention_prob
+        return attention_output, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context
 
 class ContextBERTLayer(nn.Module):
     def __init__(self, config):
@@ -388,12 +389,12 @@ class ContextBERTLayer(nn.Module):
     def forward(self, hidden_states, attention_mask,
                 # optional parameters for saving context information
                 device=None, context_embedded=None):
-        attention_output, new_attention_probs, attention_probs, quasi_attention_prob = \
+        attention_output, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context = \
             self.attention(hidden_states, attention_mask,
                            device, context_embedded)
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
-        return layer_output, new_attention_probs, attention_probs, quasi_attention_prob
+        return layer_output, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context
 
 class ContextBERTEncoder(nn.Module):
     def __init__(self, config):
@@ -418,6 +419,7 @@ class ContextBERTEncoder(nn.Module):
         all_new_attention_probs = []
         all_attention_probs = []
         all_quasi_attention_prob = []
+        all_lambda_context = []
         layer_index = 0
         for layer_module in self.layer:
             # update context
@@ -425,16 +427,17 @@ class ContextBERTEncoder(nn.Module):
             deep_context_hidden = self.context_layer[layer_index](deep_context_hidden)
             deep_context_hidden += context_embeddings
             # BERT encoding
-            hidden_states, new_attention_probs, attention_probs, quasi_attention_prob = \
+            hidden_states, new_attention_probs, attention_probs, quasi_attention_prob, lambda_context = \
                     layer_module(hidden_states, attention_mask,
                                  device, deep_context_hidden)
             all_encoder_layers.append(hidden_states)
             all_new_attention_probs.append(new_attention_probs.clone())
             all_attention_probs.append(attention_probs.clone())
             all_quasi_attention_prob.append(quasi_attention_prob.clone())
+            all_lambda_context.append(lambda_context.clone())
             layer_index += 1
         #######################################################################
-        return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
+        return all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob, all_lambda_context
 
 class ContextBertModel(nn.Module):
     """ Context-aware BERT base model
@@ -484,13 +487,13 @@ class ContextBertModel(nn.Module):
         context_embedding_output = torch.stack(seq_len*[context_embedded], dim=1)
         #######################################################################
 
-        all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob = \
+        all_encoder_layers, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob, all_lambda_context = \
             self.encoder(embedding_output, extended_attention_mask,
                          device,
                          context_embedding_output)
         sequence_output = all_encoder_layers[-1]
         pooled_output = self.pooler(sequence_output, attention_mask)
-        return pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
+        return pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob, all_lambda_context
 
 class QACGBertForSequenceClassification(nn.Module):
     """Proposed Context-Aware Bert Model for Sequence Classification
@@ -549,7 +552,7 @@ class QACGBertForSequenceClassification(nn.Module):
                 # optional parameters for saving context information
                 context_ids=None):
 
-        pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob = \
+        pooled_output, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob, all_lambda_context = \
             self.bert(input_ids, token_type_ids, attention_mask,
                       device, context_ids)
         
@@ -560,7 +563,7 @@ class QACGBertForSequenceClassification(nn.Module):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
-            return loss, logits, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob
+            return loss, logits, all_new_attention_probs, all_attention_probs, all_quasi_attention_prob, all_lambda_context
         else:
             return logits
 

@@ -273,11 +273,32 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         {'params': [p for n, p in model.named_parameters() 
             if any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.0}
         ]
+    # ok, let us here try different learning rates for newly added layers,
+    # it is just 6 linear layers.
+    if model_type == "CGBERT":
+        optimizer_parameters.append(
+            {'params': model.classifier.parameters(), 'lr': 1e-4},
+        )
+    elif model_type == "QACGBERT":
+        optimizer_parameters.append(
+            {'params': model.classifier.parameters(), 'lr': 1e-4},
+        )
+        for layer_module in model.bert.encoder.layer:
+            optimizer_parameters.append(
+                {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': 1e-4},
+            )
+    else:
+        assert False
+
     optimizer = BERTAdam(optimizer_parameters,
                         lr=learning_rate,
                         warmup=warmup_proportion,
                         t_total=num_train_steps)
-
     return model, optimizer, tokenizer
 
 def system_setups(args):
@@ -436,7 +457,7 @@ def evaluate_fast(test_dataloader, model, device, n_gpu, args):
             context_ids = context_ids.to(device)
 
             # intentially with gradient
-            tmp_test_loss, logits, _, _, _ = \
+            tmp_test_loss, logits, _, _, _, _ = \
                 model(input_ids, segment_ids, input_mask, seq_lens,
                         device=device, labels=label_ids,
                         context_ids=context_ids)
@@ -528,7 +549,7 @@ def evaluate(test_dataloader, model, device, n_gpu, nb_tr_steps, tr_loss, epoch,
             context_ids = context_ids.to(device)
 
             # intentially with gradient
-            tmp_test_loss, logits, _, _, _ = \
+            tmp_test_loss, logits, _, _, _, _ = \
                 model(input_ids, segment_ids, input_mask, seq_lens,
                         device=device, labels=label_ids,
                         context_ids=context_ids)
@@ -643,7 +664,7 @@ def step_train(train_dataloader, test_dataloader, model, optimizer,
         seq_lens = seq_lens.to(device)
         context_ids = context_ids.to(device)
 
-        loss, _, _, _, _ = \
+        loss, _, _, _, _, _ = \
             model(input_ids, segment_ids, input_mask, seq_lens,
                             device=device, labels=label_ids,
                             context_ids=context_ids)

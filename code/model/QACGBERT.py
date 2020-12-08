@@ -260,15 +260,13 @@ class ContextBERTSelfAttention(nn.Module):
         # unperturbed in the beginning
         self.context_for_q = nn.Linear(config.hidden_size, config.hidden_size)
         self.context_for_k = nn.Linear(config.hidden_size, config.hidden_size)
-
-        self.lambda_q_context_layer = nn.Linear(self.attention_head_size, 1, bias=False)
-        self.lambda_q_query_layer = nn.Linear(self.attention_head_size, 1, bias=False)
-        self.lambda_k_context_layer = nn.Linear(self.attention_head_size, 1, bias=False)
-        self.lambda_k_key_layer = nn.Linear(self.attention_head_size, 1, bias=False)
+        self.lambda_q_context_layer = nn.Linear(self.attention_head_size, 1)
+        self.lambda_q_query_layer = nn.Linear(self.attention_head_size, 1)
+        self.lambda_k_context_layer = nn.Linear(self.attention_head_size, 1)
+        self.lambda_k_key_layer = nn.Linear(self.attention_head_size, 1)
 
         # zero-centered activation function, specifically for re-arch fine tunning
         self.lambda_act = nn.Sigmoid()
-
         self.quasi_act = nn.Sigmoid()
 
     def transpose_for_scores(self, x):

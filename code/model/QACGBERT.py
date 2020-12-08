@@ -221,16 +221,16 @@ class ContextBERTPooler(nn.Module):
         # of just pooling the first [CLS] elements
         # attn_scores = self.attention_gate(hidden_states)
         # extended_attention_mask = attention_mask.unsqueeze(dim=-1)
-        attn_scores = \
-            attn_scores.masked_fill(extended_attention_mask == 0, -1e9)
-        attn_scores = F.softmax(attn_scores, dim=1)
-        # attened embeddings
-        hs_pooled = \
-            torch.matmul(attn_scores.permute(0,2,1), hidden_states).squeeze(dim=1)
+        # attn_scores = \
+        #     attn_scores.masked_fill(extended_attention_mask == 0, -1e9)
+        # attn_scores = F.softmax(attn_scores, dim=1)
+        # # attened embeddings
+        # hs_pooled = \
+        #     torch.matmul(attn_scores.permute(0,2,1), hidden_states).squeeze(dim=1)
 
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
-        # hs_pooled = hidden_states[:, 0]
+        hs_pooled = hidden_states[:, 0]
         #######################################################################
 
         #return first_token_tensor

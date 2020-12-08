@@ -221,16 +221,16 @@ class ContextBERTPooler(nn.Module):
         # of just pooling the first [CLS] elements
         # attn_scores = self.attention_gate(hidden_states)
         # extended_attention_mask = attention_mask.unsqueeze(dim=-1)
-        # attn_scores = \
-        #     attn_scores.masked_fill(extended_attention_mask == 0, -1e9)
-        # attn_scores = F.softmax(attn_scores, dim=1)
-        # # attened embeddings
-        # hs_pooled = \
-        #     torch.matmul(attn_scores.permute(0,2,1), hidden_states).squeeze(dim=1)
+        attn_scores = \
+            attn_scores.masked_fill(extended_attention_mask == 0, -1e9)
+        attn_scores = F.softmax(attn_scores, dim=1)
+        # attened embeddings
+        hs_pooled = \
+            torch.matmul(attn_scores.permute(0,2,1), hidden_states).squeeze(dim=1)
 
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
-        hs_pooled = hidden_states[:, 0]
+        # hs_pooled = hidden_states[:, 0]
         #######################################################################
 
         #return first_token_tensor
@@ -258,8 +258,8 @@ class ContextBERTSelfAttention(nn.Module):
         # learnable context integration factors
         # enforce initialization to zero as to leave the pretrain model
         # unperturbed in the beginning
-        self.context_for_q = nn.Linear(config.hidden_size, self.attention_head_size)
-        self.context_for_k = nn.Linear(config.hidden_size, self.attention_head_size)
+        self.context_for_q = nn.Linear(config.hidden_size, config.hidden_size)
+        self.context_for_k = nn.Linear(config.hidden_size, config.hidden_size)
 
         self.lambda_q_context_layer = nn.Linear(self.attention_head_size, 1, bias=False)
         self.lambda_q_query_layer = nn.Linear(self.attention_head_size, 1, bias=False)
@@ -297,23 +297,23 @@ class ContextBERTSelfAttention(nn.Module):
 
         # Quasi-attention Integration with context
         context_embedded_q = self.context_for_q(context_embedded)
-        context_embedded_q_extend = \
-            torch.stack(self.num_attention_heads * [context_embedded_q], dim=1)
+        context_embedded_q = self.transpose_for_scores(context_embedded_q)
+        context_embedded_q = self.dropout(context_embedded_q)
         context_embedded_k = self.context_for_k(context_embedded)
-        context_embedded_k_extend = \
-            torch.stack(self.num_attention_heads * [context_embedded_k], dim=1)
+        context_embedded_k = self.transpose_for_scores(context_embedded_k)
+        context_embedded_k = self.dropout(context_embedded_k)
 
-        quasi_attention_scores = torch.matmul(context_embedded_q_extend, context_embedded_k_extend.transpose(-1, -2))
+        quasi_attention_scores = torch.matmul(context_embedded_q, context_embedded_k.transpose(-1, -2))
         quasi_attention_scores = quasi_attention_scores / math.sqrt(self.attention_head_size)
         quasi_attention_scores = quasi_attention_scores + attention_mask
         quasi_scalar = 1.0
         quasi_attention_scores = 1.0 * quasi_scalar * self.quasi_act(quasi_attention_scores) # [-1, 0]
 
         # Quasi-gated control
-        lambda_q_context = self.lambda_q_context_layer(context_embedded_q_extend)
+        lambda_q_context = self.lambda_q_context_layer(context_embedded_q)
         lambda_q_query = self.lambda_q_query_layer(query_layer)
         lambda_q = self.quasi_act(lambda_q_context + lambda_q_query)
-        lambda_k_context = self.lambda_k_context_layer(context_embedded_k_extend)
+        lambda_k_context = self.lambda_k_context_layer(context_embedded_k)
         lambda_k_key = self.lambda_k_key_layer(key_layer)
         lambda_k = self.quasi_act(lambda_k_context + lambda_k_key)
         lambda_q_scalar = 1.0

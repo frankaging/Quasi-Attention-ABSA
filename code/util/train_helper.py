@@ -267,11 +267,17 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         else:
             model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'), strict=False)
     no_decay = ['bias', 'gamma', 'beta']
+    block_list = ['context_for_q',
+                  'context_for_k',
+                  'lambda_q_context_layer', 
+                  'lambda_k_context_layer',
+                  'lambda_q_query_layer',
+                  'lambda_k_key_layer']
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() 
-            if not any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.01},
+            if not any(nd in n for nd in no_decay) and not any(bl in n for bl in block_list)], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in model.named_parameters() 
-            if any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.0}
+            if any(nd in n for nd in no_decay) and not any(bl in n for bl in block_list)], 'weight_decay_rate': 0.0}
         ]
     # ok, let us here try different learning rates for newly added layers,
     # it is just 6 linear layers.
@@ -285,12 +291,12 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         )
         for layer_module in model.bert.encoder.layer:
             optimizer_parameters.extend([
-                {'params': layer_module.attention.self.context_for_q.weight, 'lr': 1e-4},
-                {'params': layer_module.attention.self.context_for_k.weight, 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_q_context_layer.weight, 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_k_context_layer.weight, 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_q_query_layer.weight, 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_k_key_layer.weight, 'lr': 1e-4},
+                {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': 1e-4},
             ])
     else:
         assert False

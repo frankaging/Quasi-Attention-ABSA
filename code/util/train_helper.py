@@ -210,6 +210,7 @@ def make_weights_for_balanced_classes(labels, nclasses, fixed=True):
                 weight[idx] = 0.4
             elif val == 2:
                 weight[idx] = 0.4  
+        return weight
     else:
         count = [0] * nclasses                                                      
         for item in labels:                                                         

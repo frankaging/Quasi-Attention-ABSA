@@ -380,7 +380,7 @@ def system_setups(args):
 
     return device, n_gpu, output_log_file
 
-def data_and_model_loader(device, n_gpu, args, sampler="weightedRandom"):
+def data_and_model_loader(device, n_gpu, args, sampler="random"):
     processor = processors[args.task_name]()
     label_list = processor.get_labels()
 

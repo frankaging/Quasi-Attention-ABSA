@@ -200,18 +200,28 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
     
     return features
 
-def make_weights_for_balanced_classes(labels, nclasses):                        
-    count = [0] * nclasses                                                      
-    for item in labels:                                                         
-        count[item] += 1                                                     
-    weight_per_class = [0.] * nclasses                                      
-    N = float(sum(count))                                                   
-    for i in range(nclasses):                                                   
-        weight_per_class[i] = N/float(count[i])                                 
-    weight = [0] * len(labels)                                              
-    for idx, val in enumerate(labels):                                          
-        weight[idx] = weight_per_class[val]                                 
-    return weight  
+def make_weights_for_balanced_classes(labels, nclasses, fixed=True):
+    if fixed:
+        weight = [0] * len(labels)                                              
+        for idx, val in enumerate(labels):
+            if val == 0:
+                weight[idx] = 0.2
+            elif val == 1:
+                weight[idx] = 0.4
+            elif val == 2:
+                weight[idx] = 0.4  
+    else:
+        count = [0] * nclasses                                                      
+        for item in labels:                                                         
+            count[item] += 1                                                     
+        weight_per_class = [0.] * nclasses                                      
+        N = float(sum(count))                                                   
+        for i in range(nclasses):                                                   
+            weight_per_class[i] = N/float(count[i])                                 
+        weight = [0] * len(labels)                                              
+        for idx, val in enumerate(labels):                                          
+            weight[idx] = weight_per_class[val]                                 
+        return weight  
 
 def getModelOptimizerTokenizer(model_type, vocab_file,
                                bert_config_file=None, init_checkpoint=None,
@@ -369,7 +379,7 @@ def system_setups(args):
 
     return device, n_gpu, output_log_file
 
-def data_and_model_loader(device, n_gpu, args):
+def data_and_model_loader(device, n_gpu, args, sampler="weightedRandom"):
     processor = processors[args.task_name]()
     label_list = processor.get_labels()
 
@@ -414,7 +424,7 @@ def data_and_model_loader(device, n_gpu, args):
     train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                all_label_ids, all_seq_len, all_context_ids)
     if args.local_rank == -1:
-        if False:
+        if sampler == "random":
             train_sampler = RandomSampler(train_data)
         else:
             # consider switching to a weighted sampler

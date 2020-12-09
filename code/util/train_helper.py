@@ -23,7 +23,7 @@ from sklearn.metrics import f1_score, accuracy_score, roc_auc_score
 
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
-from torch.utils.data.sampler import RandomSampler, SequentialSampler
+from torch.utils.data.sampler import RandomSampler, SequentialSampler, WeightedRandomSampler
 from tqdm import tqdm, trange
 
 from util.optimization import BERTAdam
@@ -199,6 +199,19 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
                         context_ids=context_ids))
     
     return features
+
+def make_weights_for_balanced_classes(labels, nclasses):                        
+    count = [0] * nclasses                                                      
+    for item in labels:                                                         
+        count[item] += 1                                                     
+    weight_per_class = [0.] * nclasses                                      
+    N = float(sum(count))                                                   
+    for i in range(nclasses):                                                   
+        weight_per_class[i] = N/float(count[i])                                 
+    weight = [0] * len(labels)                                              
+    for idx, val in enumerate(labels):                                          
+        weight[idx] = weight_per_class[val]                                 
+    return weight  
 
 def getModelOptimizerTokenizer(model_type, vocab_file,
                                bert_config_file=None, init_checkpoint=None,
@@ -404,9 +417,12 @@ def data_and_model_loader(device, n_gpu, args):
     train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                all_label_ids, all_seq_len, all_context_ids)
     if args.local_rank == -1:
-        # train_sampler = RandomSampler(train_data)
-        # consider switching to a weighted sampler
-        pass
+        if False:
+            train_sampler = RandomSampler(train_data)
+        else:
+            # consider switching to a weighted sampler
+            sampler_weights = make_weights_for_balanced_classes(all_label_ids, 3)
+            train_sampler = WeightedRandomSampler(sampler_weights, len(train_data), replacement=True)
     else:
         train_sampler = DistributedSampler(train_data)
     train_dataloader = DataLoader(train_data, sampler=train_sampler, 

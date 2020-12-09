@@ -411,9 +411,6 @@ def data_and_model_loader(device, n_gpu, args):
     all_seq_len = torch.tensor([[f.seq_len] for f in train_features], dtype=torch.long)
     all_context_ids = torch.tensor([f.context_ids for f in train_features], dtype=torch.long)
 
-    print(all_label_ids)
-    return
-
     train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                all_label_ids, all_seq_len, all_context_ids)
     if args.local_rank == -1:

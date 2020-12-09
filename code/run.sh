@@ -2,7 +2,7 @@
 CUDA_VISIBLE_DEVICES=3,4,5,6,8,9 python run_classifier.py \
 --task_name sentihood_NLI_M \
 --data_dir ../datasets/sentihood/ \
---output_dir ../results/sentihood/QACGBERT-2/ \
+--output_dir ../results/sentihood/QACGBERT-3/ \
 --model_type QACGBERT \
 --do_lower_case \
 --max_seq_length 128 \

@@ -311,17 +311,18 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
             {'params': model.classifier.parameters(), 'lr': 1e-4},
         )
     elif model_type == "QACGBERT":
+        new_lr = 2e-4
         optimizer_parameters.append(
-            {'params': model.classifier.parameters(), 'lr': 1e-4},
+            {'params': model.classifier.parameters(), 'lr': new_lr},
         )
         for layer_module in model.bert.encoder.layer:
             optimizer_parameters.extend([
-                {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': 1e-4},
-                {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': 1e-4},
-                {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': 1e-4},
+                {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': new_lr},
+                {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': new_lr},
+                {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': new_lr},
+                {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': new_lr},
+                {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': new_lr},
+                {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': new_lr},
             ])
     else:
         assert False
@@ -380,7 +381,7 @@ def system_setups(args):
 
     return device, n_gpu, output_log_file
 
-def data_and_model_loader(device, n_gpu, args, sampler="random"):
+def data_and_model_loader(device, n_gpu, args, sampler="randomWeight"):
     processor = processors[args.task_name]()
     label_list = processor.get_labels()
 

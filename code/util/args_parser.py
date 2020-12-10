@@ -6,7 +6,7 @@ parser.add_argument("--task_name",
                     default=None,
                     type=str,
                     required=True,
-                    choices=["sentihood_NLI_M", "sentihood_QA_M"],
+                    choices=["sentihood_NLI_M", "semeval_NLI_M"],
                     help="The name of the task to train.")
 parser.add_argument("--data_dir",
                     default=None,

@@ -200,7 +200,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
     
     return features
 
-def make_weights_for_balanced_classes(labels, nclasses, fixed=True):
+def make_weights_for_balanced_classes(labels, nclasses, fixed=False):
     if fixed:
         weight = [0] * len(labels)  
         if nclasses == 3:                                     

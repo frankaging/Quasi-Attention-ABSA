@@ -200,17 +200,25 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
     
     return features
 
-def make_weights_for_balanced_classes(labels, nclasses, fixed=False):
+def make_weights_for_balanced_classes(labels, nclasses, fixed=True):
     if fixed:
-        weight = [0] * len(labels)                                              
-        for idx, val in enumerate(labels):
-            if val == 0:
-                weight[idx] = 0.2
-            elif val == 1:
-                weight[idx] = 0.4
-            elif val == 2:
-                weight[idx] = 0.4  
-        return weight
+        weight = [0] * len(labels)  
+        if nclasses == 3:                                     
+            for idx, val in enumerate(labels):
+                if val == 0:
+                    weight[idx] = 0.2
+                elif val == 1:
+                    weight[idx] = 0.4
+                elif val == 2:
+                    weight[idx] = 0.4  
+            return weight
+        else:
+            for idx, val in enumerate(labels):
+                if val == 0:
+                    weight[idx] = 0.2
+                else:
+                    weight[idx] = 0.4
+            return weight 
     else:
         count = [0] * nclasses                                                      
         for item in labels:                                                         
@@ -430,7 +438,10 @@ def data_and_model_loader(device, n_gpu, args, sampler="randomWeight"):
             train_sampler = RandomSampler(train_data)
         else:
             # consider switching to a weighted sampler
-            sampler_weights = make_weights_for_balanced_classes(all_label_ids, 3)
+            if args.task_name == "semeval_NLI_M":
+                sampler_weights = make_weights_for_balanced_classes(all_label_ids, 5)
+            else:
+                sampler_weights = make_weights_for_balanced_classes(all_label_ids, 3)
             train_sampler = WeightedRandomSampler(sampler_weights, len(train_data), replacement=True)
     else:
         train_sampler = DistributedSampler(train_data)

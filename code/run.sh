@@ -1,8 +1,8 @@
 # example running command
-CUDA_VISIBLE_DEVICES=5 python run_classifier.py \
+CUDA_VISIBLE_DEVICES=4 python run_classifier.py \
 --task_name semeval_NLI_M \
 --data_dir ../datasets/semeval2014/ \
---output_dir ../results/semeval2014/QACGBERT-3/ \
+--output_dir ../results/semeval2014/QACGBERT-2/ \
 --model_type QACGBERT \
 --do_lower_case \
 --max_seq_length 128 \

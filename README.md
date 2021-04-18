@@ -1,6 +1,23 @@
 # Quasi-Attention-ABSA
-Codebase for a new quasi-attention BERT model for (T)ABSA tasks
+Codebase for Context-Guided BERT for Targeted Aspect-Based Sentiment Analysis (AAAI2021)
 
+## Contents
+
+* [Citation](#Citation)
+* [Quick start](#quick-start)
+* [License](#license)
+
+## Citation
+```
+@inproceedings{wu2020context,
+  title={Context-Guided BERT for Targeted Aspect-Based Sentiment Analysis},
+  author={Wu, Zhengxuan and Ong, Desmond C},
+  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
+  year={2021}
+}
+```
+
+## Quick start
 ### Download Pretrained BERT Model
 You will have to download pretrained BERT model in order to execute the fine-tune pipeline. We recommand to use models provided by the official release on BERT from [BERT-Base (Google's pre-trained models)](https://github.com/google-research/bert). Note that their model is in tensorflow format. To convert tensorflow model to pytorch model, you can use the helper script to do that. For example,
 ```bash
@@ -47,13 +64,6 @@ jupyter notebook
 ```
 Inside ``visualization``, we provide an example on how to extract attention scores, gradient sensitivity scores!
 
-### Citation
+## License
 
-```
-@article{wu2020context,
-  title={Context-Guided BERT for Targeted Aspect-Based Sentiment Analysis},
-  author={Wu, Zhengxuan and Ong, Desmond C},
-  journal={arXiv preprint arXiv:2010.07523},
-  year={2020}
-}
-```
+This repo has a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).

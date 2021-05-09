@@ -299,41 +299,52 @@ def getModelOptimizerTokenizer(model_type, vocab_file,
         else:
             model.bert.load_state_dict(torch.load(init_checkpoint, map_location='cpu'), strict=False)
     no_decay = ['bias', 'gamma', 'beta']
-    block_list = ['context_for_q',
-                  'context_for_k',
-                  'lambda_q_context_layer', 
-                  'lambda_k_context_layer',
-                  'lambda_q_query_layer',
-                  'lambda_k_key_layer',
-                  'classifier']
+    block_list = []
+    # PR:https://github.com/frankaging/Quasi-Attention-ABSA/issues/2
+    # The following code is for personal fun, for discovering
+    # interplays of learning rates for different layers.
+    # Current they are not working, so i have to comment them
+    # out. 
+    # block_list = ['context_for_q',
+    #               'context_for_k',
+    #               'lambda_q_context_layer', 
+    #               'lambda_k_context_layer',
+    #               'lambda_q_query_layer',
+    #               'lambda_k_key_layer',
+    #               'classifier']
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() 
             if not any(nd in n for nd in no_decay) and not any(bl in n for bl in block_list)], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in model.named_parameters() 
             if any(nd in n for nd in no_decay) and not any(bl in n for bl in block_list)], 'weight_decay_rate': 0.0}
         ]
+    # PR:https://github.com/frankaging/Quasi-Attention-ABSA/issues/2
+    # The following code is for personal fun, for discovering
+    # interplays of learning rates for different layers.
+    # Current they are not working, so i have to comment them
+    # out. 
     # ok, let us here try different learning rates for newly added layers,
     # it is just 6 linear layers.
-    if model_type == "CGBERT":
-        optimizer_parameters.append(
-            {'params': model.classifier.parameters(), 'lr': 1e-4},
-        )
-    elif model_type == "QACGBERT":
-        new_lr = 2e-4
-        optimizer_parameters.append(
-            {'params': model.classifier.parameters(), 'lr': new_lr},
-        )
-        for layer_module in model.bert.encoder.layer:
-            optimizer_parameters.extend([
-                {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': new_lr},
-                {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': new_lr},
-                {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': new_lr},
-                {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': new_lr},
-                {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': new_lr},
-                {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': new_lr},
-            ])
-    else:
-        assert False
+    # if model_type == "CGBERT":
+    #     optimizer_parameters.append(
+    #         {'params': model.classifier.parameters(), 'lr': 1e-4},
+    #     )
+    # elif model_type == "QACGBERT":
+    #     new_lr = 2e-4
+    #     optimizer_parameters.append(
+    #         {'params': model.classifier.parameters(), 'lr': new_lr},
+    #     )
+    #     for layer_module in model.bert.encoder.layer:
+    #         optimizer_parameters.extend([
+    #             {'params': layer_module.attention.self.context_for_q.parameters(), 'lr': new_lr},
+    #             {'params': layer_module.attention.self.context_for_k.parameters(), 'lr': new_lr},
+    #             {'params': layer_module.attention.self.lambda_q_context_layer.parameters(), 'lr': new_lr},
+    #             {'params': layer_module.attention.self.lambda_k_context_layer.parameters(), 'lr': new_lr},
+    #             {'params': layer_module.attention.self.lambda_q_query_layer.parameters(), 'lr': new_lr},
+    #             {'params': layer_module.attention.self.lambda_k_key_layer.parameters(), 'lr': new_lr},
+    #         ])
+    # else:
+    #     assert False
 
     optimizer = BERTAdam(optimizer_parameters,
                         lr=learning_rate,

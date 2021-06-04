@@ -503,6 +503,6 @@ class CGBertForSequenceClassification(nn.Module):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
-            return loss, logits
+            return loss, logits, None, None, None, None
         else:
             return logits
